@@ -25,7 +25,13 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.5);
-      overflow-x: hidden;
+    }
+
+    /* 🔥 ЗАГОЛОВОК ПО ЦЕНТРУ */
+    h2 {
+      text-align: center;
+      font-size: 26px;
+      margin: 10px 0 25px 0;
     }
 
     input {
@@ -36,7 +42,6 @@
       margin-top: 10px;
     }
 
-    /* 🔥 ОБЩИЙ СТИЛЬ КНОПОК */
     button {
       border: none;
       cursor: pointer;
@@ -44,7 +49,6 @@
       transition: 0.1s;
     }
 
-    /* 🟢 БОЛЬШАЯ КНОПКА СКАНА */
     .scan-btn {
       background: #00c853;
       color: white;
@@ -61,7 +65,6 @@
       box-shadow: 0 2px 0 #009624;
     }
 
-    /* 🔵 КНОПКА НАЧАТЬ (УВЕЛИЧЕНА) */
     .start-btn {
       background: #2196f3;
       color: white;
@@ -98,14 +101,14 @@
 
 <div id="app">
 
-  <h2>🏁 Ориентирование</h2>
+  <!-- 🟢 ЦЕНТРИРОВАННАЯ НАДПИСЬ -->
+  <h2>🏁 Ориентирование QR</h2>
 
   <div id="login">
     <p>Введите номер спортсмена:</p>
     <input id="athleteId" type="text" placeholder="Например 101">
     <br>
 
-    <!-- 🔥 УВЕЛИЧЕННАЯ КНОПКА -->
     <button class="start-btn" onclick="start()">Начать</button>
   </div>
 
@@ -160,8 +163,6 @@ function startScan() {
 }
 
 function registerCP(cp) {
-  const time = new Date().toLocaleTimeString();
-
   if (checkpoints.includes(cp)) {
     alert("КП уже пройдено!");
     return;
@@ -172,7 +173,7 @@ function registerCP(cp) {
   saveData();
   render();
 
-  alert("КП засчитано: " + cp + " (" + time + ")");
+  alert("КП засчитано: " + cp);
 }
 
 function render() {
