@@ -145,13 +145,13 @@ function startScan() {
 function registerCP(cp) {
   const time = new Date().toLocaleTimeString();
 
-  const exists = checkpoints.some(i => i.cp === cp);
+  const isRepeat = checkpoints.some(item => item.cp === cp);
 
   const record = {
     athlete,
     cp,
     time,
-    type: exists ? "repeat" : "ok"
+    type: isRepeat ? "repeat" : "ok"
   };
 
   checkpoints.push(record);
@@ -160,7 +160,6 @@ function registerCP(cp) {
   saveData();
   saveQueue();
   render();
-
   trySync();
 }
 
