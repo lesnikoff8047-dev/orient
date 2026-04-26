@@ -2,16 +2,21 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+
+  <!-- 🔥 БЛОКИРОВКА МАСШТАБА -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <title>Ориентирование QR</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    body {
-      font-family: Arial;
+    html, body {
       margin: 0;
-      padding: 20px;
-      background: #121212; /* тёмный фон */
-      color: #ffffff;
+      padding: 0;
+      overflow-x: hidden; /* 🚫 запрет движения влево-вправо */
+      background: #121212;
+      color: white;
+      font-family: Arial;
     }
 
     #app {
@@ -21,6 +26,7 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      overflow-x: hidden;
     }
 
     input {
@@ -36,7 +42,7 @@
       background: #00c853;
       color: white;
       font-size: 22px;
-      padding: 60px 70px;
+      padding: 50px 60px;
       border: none;
       border-radius: 16px;
       cursor: pointer;
@@ -84,7 +90,6 @@
   <div id="main" style="display:none;">
     <h3>Спортсмен: <span id="athlete"></span></h3>
 
-    <!-- 🔥 большая зелёная кнопка -->
     <button class="scan-btn" onclick="startScan()">
       СКАНИРОВАТЬ КП
     </button>
