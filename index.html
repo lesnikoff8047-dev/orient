@@ -1,124 +1,136 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <title>Ориентирование QR</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<title>Ориентирование QR</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow-x: hidden;
-      background: #121212;
-      color: white;
-      font-family: Arial;
-    }
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background: #121212;
+  color: white;
+  font-family: Arial;
+}
 
-    #app {
-      max-width: 500px;
-      margin: auto;
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 12px;
-    }
+#app {
+  max-width: 500px;
+  margin: auto;
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 12px;
+}
 
-    h2 { text-align: center; }
+h2 { text-align: center; }
 
-    input {
-      padding: 14px;
-      width: 90%;
-      font-size: 18px;
-      border-radius: 8px;
-      border: none;
-    }
+input {
+  padding: 14px;
+  width: 90%;
+  font-size: 18px;
+  border-radius: 8px;
+  border: none;
+}
 
-    button {
-      border: none;
-      cursor: pointer;
-      border-radius: 12px;
-    }
+button {
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+}
 
-    .start-btn {
-      background: #2196f3;
-      color: white;
-      font-size: 20px;
-      padding: 18px;
-      width: 100%;
-      margin-top: 15px;
-      font-weight: bold;
-    }
+.start-btn {
+  background: #2196f3;
+  color: white;
+  font-size: 20px;
+  padding: 18px;
+  width: 100%;
+  margin-top: 15px;
+  font-weight: bold;
+}
 
-    .scan-btn {
-      background: #00c853;
-      color: white;
-      font-size: 22px;
-      padding: 20px;
-      width: 100%;
-      margin: 20px 0;
-      font-weight: bold;
-    }
+.scan-btn {
+  background: #00c853;
+  color: white;
+  font-size: 22px;
+  padding: 20px;
+  width: 100%;
+  margin: 20px 0;
+  font-weight: bold;
+}
 
-    .danger-btn {
-      background: #d32f2f;
-      color: white;
-      font-size: 14px;
-      padding: 10px;
-      width: 60%;
-      margin: 10px auto 0;
-      display: block;
-      border-radius: 10px;
-      font-weight: bold;
-    }
+.danger-btn {
+  background: #d32f2f;
+  color: white;
+  font-size: 14px;
+  padding: 10px;
+  width: 60%;
+  margin: 10px auto 0;
+  display: block;
+  border-radius: 10px;
+  font-weight: bold;
+}
 
-    .cp {
-      padding: 10px;
-      margin: 6px 0;
-      background: #2a2a2a;
-      border-radius: 8px;
-    }
+.cp {
+  padding: 10px;
+  margin: 6px 0;
+  background: #2a2a2a;
+  border-radius: 8px;
+}
 
-    #reader {
-      width: 100%;
-      margin-top: 10px;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-  </style>
+#reader {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+</style>
 </head>
 
 <body>
 
 <div id="app">
 
-  <h2>🏁 Ориентирование QR</h2>
+<h2>🏁 Ориентирование QR</h2>
 
-  <div id="login">
-    <p>Номер спортсмена:</p>
-    <input id="athleteId" type="text" placeholder="101">
-    <button class="start-btn" onclick="start()">Начать</button>
-  </div>
+<div id="login">
+  <p>Номер спортсмена:</p>
+  <input id="athleteId" type="text" placeholder="101">
+  <button class="start-btn" onclick="start()">Начать</button>
+</div>
 
-  <div id="main" style="display:none;">
-    <h3>Спортсмен: <span id="athlete"></span></h3>
+<div id="main" style="display:none;">
+  <h3>Спортсмен: <span id="athlete"></span></h3>
 
-    <button class="scan-btn" onclick="startScan()">СКАНИРОВАТЬ КП</button>
+  <button class="scan-btn" onclick="startScan()">СКАНИРОВАТЬ КП</button>
 
-    <button class="danger-btn" onclick="resetData()">⚠ ОЧИСТИТЬ КП</button>
+  <button class="danger-btn" onclick="resetData()">⚠ ОЧИСТИТЬ КП</button>
 
-    <div id="reader" style="display:none;"></div>
+  <div id="reader" style="display:none;"></div>
 
-    <h3>КП:</h3>
-    <div id="list"></div>
-  </div>
+  <h3>КП:</h3>
+  <div id="list"></div>
+</div>
 
 </div>
 
 <script>
 
+// ======================
+// 🔐 УНИКАЛЬНОЕ УСТРОЙСТВО
+// ======================
+let deviceId = localStorage.getItem("device_id");
+if (!deviceId) {
+  deviceId = crypto.randomUUID();
+  localStorage.setItem("device_id", deviceId);
+}
+
+let athleteRegistry = JSON.parse(localStorage.getItem("athlete_registry") || "{}");
+
+// ======================
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbxQlJjaa7dieWA2K04P5KztZ3RWr_-iPrXWDxUNbS3F6WhDyqigzy7K788DGLqba9pp/exec";
 
 let athlete = "";
@@ -132,6 +144,15 @@ function start() {
   athlete = document.getElementById("athleteId").value;
   if (!athlete) return alert("Введите номер");
 
+  // 🔐 защита номера
+  if (athleteRegistry[athlete] && athleteRegistry[athlete] !== deviceId) {
+    alert("❌ Этот номер уже используется другим спортсменом");
+    return;
+  }
+
+  athleteRegistry[athlete] = deviceId;
+  localStorage.setItem("athlete_registry", JSON.stringify(athleteRegistry));
+
   document.getElementById("login").style.display = "none";
   document.getElementById("main").style.display = "block";
   document.getElementById("athlete").innerText = athlete;
@@ -139,7 +160,7 @@ function start() {
   loadData();
   loadQueue();
 
-  // 🔥 ВОССТАНОВЛЕНИЕ ФИНИША
+  // 🧠 восстановление состояния
   raceFinished = localStorage.getItem("raceFinished_" + athlete) === "1";
   finishTime = Number(localStorage.getItem("finishTime_" + athlete)) || null;
 
@@ -226,7 +247,7 @@ function finishRace() {
   render();
   trySync();
 
-  alert("🏁 ФИНИШ!");
+  alert("🏁 БЕГИ НА ФИНИШ !");
 }
 
 // ---------------- RESET ----------------
