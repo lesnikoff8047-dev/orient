@@ -28,16 +28,14 @@
 
     h2 {
       text-align: center;
-      margin: 10px 0 25px;
     }
 
     input {
       padding: 14px;
       width: 90%;
+      font-size: 18px;
       border-radius: 8px;
       border: none;
-      font-size: 18px;
-      margin-top: 10px;
     }
 
     button {
@@ -50,9 +48,9 @@
       background: #2196f3;
       color: white;
       font-size: 20px;
-      padding: 18px 30px;
-      margin-top: 15px;
+      padding: 18px;
       width: 100%;
+      margin-top: 15px;
       font-weight: bold;
     }
 
@@ -60,9 +58,9 @@
       background: #00c853;
       color: white;
       font-size: 22px;
-      padding: 20px 30px;
-      margin: 20px 0;
+      padding: 20px;
       width: 100%;
+      margin: 20px 0;
       font-weight: bold;
     }
 
@@ -89,44 +87,43 @@
   <h2>🏁 Ориентирование QR</h2>
 
   <div id="login">
-    <p>Введите номер спортсмена:</p>
-    <input id="athleteId" type="text" placeholder="Например 101">
-    <br>
+    <p>Номер спортсмена:</p>
+    <input id="athleteId" type="text" placeholder="101">
     <button class="start-btn" onclick="start()">Начать</button>
   </div>
 
   <div id="main" style="display:none;">
     <h3>Спортсмен: <span id="athlete"></span></h3>
 
-    <button class="scan-btn" onclick="startScan()">
-      СКАНИРОВАТЬ КП
-    </button>
+    <button class="scan-btn" onclick="startScan()">СКАНИРОВАТЬ КП</button>
 
     <div id="reader" style="display:none;"></div>
 
-    <h3>Пройденные КП:</h3>
+    <h3>КП:</h3>
     <div id="list"></div>
   </div>
 
 </div>
 
 <script>
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxQlJjaa7dieWA2K04P5KztZ3RWr_-iPrXWDxUNbS3F6WhDyqigzy7K788DGLqba9pp/exec";
+
 let athlete = "";
 let checkpoints = [];
+let queue = [];
 
 function start() {
   athlete = document.getElementById("athleteId").value;
-  if (!athlete) {
-    alert("Введите номер!");
-    return;
-  }
+  if (!athlete) return alert("Введите номер");
 
   document.getElementById("login").style.display = "none";
   document.getElementById("main").style.display = "block";
   document.getElementById("athlete").innerText = athlete;
 
   loadData();
+  loadQueue();
   render();
+  trySync();
 }
 
 function startScan() {
@@ -137,10 +134,10 @@ function startScan() {
   qr.start(
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
-    (decodedText) => {
+    (text) => {
       qr.stop();
       document.getElementById("reader").style.display = "none";
-      registerCP(decodedText);
+      registerCP(text);
     }
   );
 }
@@ -148,16 +145,23 @@ function startScan() {
 function registerCP(cp) {
   const time = new Date().toLocaleTimeString();
 
-  const exists = checkpoints.some(item => item.cp === cp);
+  const exists = checkpoints.some(i => i.cp === cp);
 
-  if (exists) {
-    checkpoints.push({ cp: cp, type: "repeat", time: time });
-  } else {
-    checkpoints.push({ cp: cp, type: "ok", time: time });
-  }
+  const record = {
+    athlete,
+    cp,
+    time,
+    type: exists ? "repeat" : "ok"
+  };
+
+  checkpoints.push(record);
+  queue.push(record);
 
   saveData();
+  saveQueue();
   render();
+
+  trySync();
 }
 
 function render() {
@@ -170,17 +174,37 @@ function render() {
 
     if (item.type === "repeat") {
       div.style.color = "red";
-      div.style.borderLeft = "4px solid red";
-      div.innerText = (i + 1) + ". ❌ Повтор КП: " + item.cp;
+      div.innerText = `${i+1}. ❌ ${item.cp} (${item.time})`;
     } else {
       div.style.color = "#00c853";
-      div.style.borderLeft = "4px solid #00c853";
-      div.innerText = (i + 1) + ". ✔ КП: " + item.cp;
+      div.innerText = `${i+1}. ✔ ${item.cp} (${item.time})`;
     }
 
     list.appendChild(div);
   });
 }
+
+function sendToSheet(data) {
+  return fetch(SHEET_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+}
+
+function trySync() {
+  if (!navigator.onLine) return;
+
+  const copy = [...queue];
+
+  copy.forEach(async (item) => {
+    await sendToSheet(item);
+  });
+
+  queue = [];
+  saveQueue();
+}
+
+window.addEventListener("online", trySync);
 
 function saveData() {
   localStorage.setItem("cp_" + athlete, JSON.stringify(checkpoints));
@@ -189,6 +213,15 @@ function saveData() {
 function loadData() {
   const data = localStorage.getItem("cp_" + athlete);
   if (data) checkpoints = JSON.parse(data);
+}
+
+function saveQueue() {
+  localStorage.setItem("queue_" + athlete, JSON.stringify(queue));
+}
+
+function loadQueue() {
+  const data = localStorage.getItem("queue_" + athlete);
+  if (data) queue = JSON.parse(data);
 }
 </script>
 
