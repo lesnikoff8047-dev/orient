@@ -228,8 +228,8 @@ function resetData() {
     const diff = Date.now() - finishTime;
     const minutes = diff / 1000 / 60;
 
-    if (minutes < 15) {
-      alert(`⏳ Очистка доступна через ${Math.ceil(15 - minutes)} мин`);
+    if (minutes < 2) {
+      alert(`⏳ Очистка доступна через ${Math.ceil(2 - minutes)} мин`);
       return;
     }
   }
