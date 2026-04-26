@@ -24,44 +24,26 @@
       background: #1e1e1e;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
     }
 
-    /* 🔥 ЗАГОЛОВОК ПО ЦЕНТРУ */
     h2 {
       text-align: center;
-      font-size: 26px;
-      margin: 10px 0 25px 0;
+      margin: 10px 0 25px;
     }
 
     input {
-  padding: 14px;
-  width: 90%;
-  font-size: 18px;
-  border-radius: 8px;
+      padding: 14px;
+      width: 90%;
+      border-radius: 8px;
+      border: none;
+      font-size: 18px;
+      margin-top: 10px;
     }
 
     button {
       border: none;
       cursor: pointer;
       border-radius: 12px;
-      transition: 0.1s;
-    }
-
-    .scan-btn {
-      background: #00c853;
-      color: white;
-      font-size: 22px;
-      padding: 20px 30px;
-      margin: 20px 0;
-      width: 100%;
-      font-weight: bold;
-      box-shadow: 0 6px 0 #009624;
-    }
-
-    .scan-btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #009624;
     }
 
     .start-btn {
@@ -72,12 +54,16 @@
       margin-top: 15px;
       width: 100%;
       font-weight: bold;
-      box-shadow: 0 6px 0 #1565c0;
     }
 
-    .start-btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #1565c0;
+    .scan-btn {
+      background: #00c853;
+      color: white;
+      font-size: 22px;
+      padding: 20px 30px;
+      margin: 20px 0;
+      width: 100%;
+      font-weight: bold;
     }
 
     .cp {
@@ -100,14 +86,12 @@
 
 <div id="app">
 
-  <!-- 🟢 ЦЕНТРИРОВАННАЯ НАДПИСЬ -->
   <h2>🏁 Ориентирование QR</h2>
 
   <div id="login">
     <p>Введите номер спортсмена:</p>
     <input id="athleteId" type="text" placeholder="Например 101">
     <br>
-
     <button class="start-btn" onclick="start()">Начать</button>
   </div>
 
@@ -162,27 +146,38 @@ function startScan() {
 }
 
 function registerCP(cp) {
-  if (checkpoints.includes(cp)) {
-    alert("КП уже пройдено!");
-    return;
-  }
+  const time = new Date().toLocaleTimeString();
 
-  checkpoints.push(cp);
+  const exists = checkpoints.some(item => item.cp === cp);
+
+  if (exists) {
+    checkpoints.push({ cp: cp, type: "repeat", time: time });
+  } else {
+    checkpoints.push({ cp: cp, type: "ok", time: time });
+  }
 
   saveData();
   render();
-
-  alert("КП засчитано: " + cp);
 }
 
 function render() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  checkpoints.forEach((cp, i) => {
+  checkpoints.forEach((item, i) => {
     const div = document.createElement("div");
     div.className = "cp";
-    div.innerText = (i + 1) + ". " + cp;
+
+    if (item.type === "repeat") {
+      div.style.color = "red";
+      div.style.borderLeft = "4px solid red";
+      div.innerText = (i + 1) + ". ❌ Повтор КП: " + item.cp;
+    } else {
+      div.style.color = "#00c853";
+      div.style.borderLeft = "4px solid #00c853";
+      div.innerText = (i + 1) + ". ✔ КП: " + item.cp;
+    }
+
     list.appendChild(div);
   });
 }
