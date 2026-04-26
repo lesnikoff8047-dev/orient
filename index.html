@@ -26,9 +26,7 @@
       border-radius: 12px;
     }
 
-    h2 {
-      text-align: center;
-    }
+    h2 { text-align: center; }
 
     input {
       padding: 14px;
@@ -74,7 +72,6 @@
       display: block;
       border-radius: 10px;
       font-weight: bold;
-      border: none;
     }
 
     .cp {
@@ -110,7 +107,6 @@
 
     <button class="scan-btn" onclick="startScan()">СКАНИРОВАТЬ КП</button>
 
-    <!-- 🔴 КНОПКА ОЧИСТКИ -->
     <button class="danger-btn" onclick="resetData()">⚠ ОЧИСТИТЬ КП</button>
 
     <div id="reader" style="display:none;"></div>
@@ -127,6 +123,8 @@ const SHEET_URL = "https://script.google.com/macros/s/AKfycbxQlJjaa7dieWA2K04P5K
 let athlete = "";
 let checkpoints = [];
 let queue = [];
+let raceFinished = false;
+let finishTime = null;
 
 function start() {
   athlete = document.getElementById("athleteId").value;
@@ -143,6 +141,11 @@ function start() {
 }
 
 function startScan() {
+  if (raceFinished) {
+    alert("Гонка завершена");
+    return;
+  }
+
   document.getElementById("reader").style.display = "block";
 
   const qr = new Html5Qrcode("reader");
@@ -151,23 +154,55 @@ function startScan() {
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     (text) => {
+
       qr.stop();
       document.getElementById("reader").style.display = "none";
-      registerCP(text);
+
+      const code = text.trim();
+
+      if (code === "100") {
+        finishRace();
+        return;
+      }
+
+      registerCP(code);
     }
   );
 }
 
 function registerCP(cp) {
+  if (raceFinished) return;
+
   const time = new Date().toLocaleTimeString();
 
   const isRepeat = checkpoints.some(item => item.cp === cp);
 
-  const record = {
-    athlete: athlete,
-    cp: cp,
-    time: time,
+  checkpoints.push({
+    athlete,
+    cp,
+    time,
     type: isRepeat ? "repeat" : "ok"
+  });
+
+  queue.push({ athlete, cp, time });
+
+  saveData();
+  saveQueue();
+  render();
+  trySync();
+}
+
+function finishRace() {
+  if (raceFinished) return;
+
+  raceFinished = true;
+  finishTime = Date.now();
+
+  const record = {
+    athlete,
+    cp: "FINISH",
+    time: new Date().toLocaleTimeString(),
+    type: "finish"
   };
 
   checkpoints.push(record);
@@ -177,31 +212,41 @@ function registerCP(cp) {
   saveQueue();
   render();
   trySync();
+
+  alert("🏁 ФИНИШ");
 }
 
-/* 🧹 ОЧИСТКА С ЗАЩИТОЙ */
 function resetData() {
 
-  if (checkpoints.length > 0) {
-    alert("⛔ Нельзя очищать после начала гонки!");
+  if (checkpoints.length > 0 && !raceFinished) {
+    alert("⛔ Нельзя очищать после старта!");
     return;
   }
 
-  const confirm1 = confirm("⚠ Удалить все данные?");
-  if (!confirm1) return;
+  if (raceFinished) {
+    const diff = Date.now() - finishTime;
+    const minutes = diff / 1000 / 60;
 
-  const confirm2 = confirm("Это действие нельзя отменить. Продолжить?");
-  if (!confirm2) return;
+    if (minutes < 1) {
+      alert(`⏳ Очистка доступна через ${Math.ceil(15 - minutes)} мин`);
+      return;
+    }
+  }
+
+  const ok = confirm("Удалить данные?");
+  if (!ok) return;
 
   checkpoints = [];
   queue = [];
+  raceFinished = false;
+  finishTime = null;
 
   localStorage.removeItem("cp_" + athlete);
   localStorage.removeItem("queue_" + athlete);
 
   render();
 
-  alert("🧹 Данные очищены");
+  alert("🧹 Очищено");
 }
 
 function render() {
@@ -215,7 +260,12 @@ function render() {
     if (item.type === "repeat") {
       div.style.color = "red";
       div.innerText = `${i+1}. ❌ КП ${item.cp} (${item.time})`;
-    } else {
+    }
+    else if (item.type === "finish") {
+      div.style.color = "#ff5252";
+      div.innerText = `${i+1}. 🏁 ФИНИШ (${item.time})`;
+    }
+    else {
       div.style.color = "#00c853";
       div.innerText = `${i+1}. ✔ КП ${item.cp} (${item.time})`;
     }
@@ -234,9 +284,7 @@ function sendToSheet(data) {
 function trySync() {
   if (!navigator.onLine) return;
 
-  const copy = [...queue];
-
-  copy.forEach(async (item) => {
+  queue.forEach(async (item) => {
     await sendToSheet(item);
   });
 
