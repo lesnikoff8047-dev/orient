@@ -213,7 +213,7 @@ function finishRace() {
   render();
   trySync();
 
-  alert("🏁 ФИНИШ");
+  alert("🏁 БЕГИ НА ФИНИШ !!!");
 }
 
 function resetData() {
@@ -227,7 +227,7 @@ function resetData() {
     const diff = Date.now() - finishTime;
     const minutes = diff / 1000 / 60;
 
-    if (minutes < 1) {
+    if (minutes < 15) {
       alert(`⏳ Очистка доступна через ${Math.ceil(15 - minutes)} мин`);
       return;
     }
