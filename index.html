@@ -1,146 +1,152 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8">
 
-<title>Ориентирование QR</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #121212;
-  color: white;
-  font-family: Arial;
-}
+  <title>Ориентирование QR</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
-#app {
-  max-width: 500px;
-  margin: auto;
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 12px;
-}
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: #121212;
+      color: white;
+      font-family: Arial;
+    }
 
-h2 { text-align: center; }
+    #app {
+      max-width: 500px;
+      margin: auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+    }
 
-input {
-  padding: 14px;
-  width: 90%;
-  font-size: 18px;
-  border-radius: 8px;
-  border: none;
-}
+    h2 { text-align: center; }
 
-button {
-  border: none;
-  cursor: pointer;
-  border-radius: 12px;
-}
+    input {
+      padding: 14px;
+      width: 90%;
+      font-size: 18px;
+      border-radius: 8px;
+      border: none;
+    }
 
-.start-btn {
-  background: #2196f3;
-  color: white;
-  font-size: 20px;
-  padding: 18px;
-  width: 100%;
-  margin-top: 15px;
-  font-weight: bold;
-}
+    button {
+      border: none;
+      cursor: pointer;
+      border-radius: 12px;
+    }
 
-.scan-btn {
-  background: #00c853;
-  color: white;
-  font-size: 22px;
-  padding: 20px;
-  width: 100%;
-  margin: 20px 0;
-  font-weight: bold;
-}
+    .start-btn {
+      background: #2196f3;
+      color: white;
+      font-size: 20px;
+      padding: 18px;
+      width: 100%;
+      margin-top: 15px;
+      font-weight: bold;
+    }
 
-.cp {
-  padding: 10px;
-  margin: 6px 0;
-  background: #2a2a2a;
-  border-radius: 8px;
-}
+    .scan-btn {
+      background: #00c853;
+      color: white;
+      font-size: 22px;
+      padding: 20px;
+      width: 100%;
+      margin: 20px 0;
+      font-weight: bold;
+    }
 
-#reader {
-  width: 100%;
-  margin-top: 10px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-</style>
+    .danger-btn {
+      background: #d32f2f;
+      color: white;
+      font-size: 14px;
+      padding: 10px;
+      width: 60%;
+      margin: 10px auto 0;
+      display: block;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .cp {
+      padding: 10px;
+      margin: 6px 0;
+      background: #2a2a2a;
+      border-radius: 8px;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+  </style>
 </head>
 
 <body>
 
 <div id="app">
 
-<h2>🏁 Ориентирование QR</h2>
+  <h2>🏁 Ориентирование QR</h2>
 
-<div id="login">
-  <p>Номер спортсмена:</p>
-  <input id="athleteId" type="text" placeholder="101">
-  <button class="start-btn" onclick="start()">Начать</button>
-</div>
+  <div id="login">
+    <p>Номер спортсмена:</p>
+    <input id="athleteId" type="text" placeholder="101">
+    <button class="start-btn" onclick="start()">Начать</button>
+  </div>
 
-<div id="main" style="display:none;">
-  <h3>Спортсмен: <span id="athlete"></span></h3>
+  <div id="main" style="display:none;">
+    <h3>Спортсмен: <span id="athlete"></span></h3>
 
-  <button class="scan-btn" onclick="startScan()">СКАНИРОВАТЬ КП</button>
+    <button class="scan-btn" onclick="startScan()">СКАНИРОВАТЬ КП</button>
 
-  <div id="reader" style="display:none;"></div>
+    <button class="danger-btn" onclick="resetData()">⚠ ОЧИСТИТЬ КП</button>
 
-  <h3>КП:</h3>
-  <div id="list"></div>
-</div>
+    <div id="reader" style="display:none;"></div>
+
+    <h3>КП:</h3>
+    <div id="list"></div>
+  </div>
 
 </div>
 
 <script>
 
-// 🧠 уникальный ID устройства
-let deviceId = localStorage.getItem("device_id");
-if (!deviceId) {
-  deviceId = crypto.randomUUID();
-  localStorage.setItem("device_id", deviceId);
-}
-
-// 📌 база: номер → устройство
-let athleteRegistry = JSON.parse(localStorage.getItem("athlete_registry") || "{}");
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxQlJjaa7dieWA2K04P5KztZ3RWr_-iPrXWDxUNbS3F6WhDyqigzy7K788DGLqba9pp/exec";
 
 let athlete = "";
 let checkpoints = [];
+let queue = [];
+let raceFinished = false;
+let finishTime = null;
 
-// ---------------- START ----------------
 function start() {
   athlete = document.getElementById("athleteId").value;
   if (!athlete) return alert("Введите номер");
-
-  // ❌ если номер уже используется другим устройством
-  if (athleteRegistry[athlete] && athleteRegistry[athlete] !== deviceId) {
-    alert("❌ Этот номер уже используется другим спортсменом");
-    return;
-  }
-
-  // 🟢 закрепляем номер
-  athleteRegistry[athlete] = deviceId;
-  localStorage.setItem("athlete_registry", JSON.stringify(athleteRegistry));
 
   document.getElementById("login").style.display = "none";
   document.getElementById("main").style.display = "block";
   document.getElementById("athlete").innerText = athlete;
 
   loadData();
+  loadQueue();
   render();
+  trySync();
 }
 
-// ---------------- SCAN ----------------
 function startScan() {
+  if (raceFinished) {
+    alert("Гонка завершена");
+    return;
+  }
+
   document.getElementById("reader").style.display = "block";
 
   const qr = new Html5Qrcode("reader");
@@ -153,22 +159,97 @@ function startScan() {
       qr.stop();
       document.getElementById("reader").style.display = "none";
 
-      registerCP(text.trim());
+      const code = text.trim();
+
+      if (code === "100") {
+        finishRace();
+        return;
+      }
+
+      registerCP(code);
     }
   );
 }
 
-// ---------------- CP ----------------
 function registerCP(cp) {
+  if (raceFinished) return;
+
   const time = new Date().toLocaleTimeString();
 
-  checkpoints.push({ cp, time });
+  const isRepeat = checkpoints.some(item => item.cp === cp);
+
+  checkpoints.push({
+    athlete,
+    cp,
+    time,
+    type: isRepeat ? "repeat" : "ok"
+  });
+
+  queue.push({ athlete, cp, time });
 
   saveData();
+  saveQueue();
   render();
+  trySync();
 }
 
-// ---------------- RENDER ----------------
+function finishRace() {
+  if (raceFinished) return;
+
+  raceFinished = true;
+  finishTime = Date.now();
+
+  const record = {
+    athlete,
+    cp: "FINISH",
+    time: new Date().toLocaleTimeString(),
+    type: "finish"
+  };
+
+  checkpoints.push(record);
+  queue.push(record);
+
+  saveData();
+  saveQueue();
+  render();
+  trySync();
+
+  alert("🏁 БЕГИ НА ФИНИШ !!!");
+}
+
+function resetData() {
+
+  if (checkpoints.length > 0 && !raceFinished) {
+    alert("⛔ Нельзя очищать после старта!");
+    return;
+  }
+
+  if (raceFinished) {
+    const diff = Date.now() - finishTime;
+    const minutes = diff / 1000 / 60;
+
+    if (minutes < 15) {
+      alert(`⏳ Очистка доступна через ${Math.ceil(15 - minutes)} мин`);
+      return;
+    }
+  }
+
+  const ok = confirm("Удалить данные?");
+  if (!ok) return;
+
+  checkpoints = [];
+  queue = [];
+  raceFinished = false;
+  finishTime = null;
+
+  localStorage.removeItem("cp_" + athlete);
+  localStorage.removeItem("queue_" + athlete);
+
+  render();
+
+  alert("🧹 Очищено");
+}
+
 function render() {
   const list = document.getElementById("list");
   list.innerHTML = "";
@@ -176,12 +257,44 @@ function render() {
   checkpoints.forEach((item, i) => {
     const div = document.createElement("div");
     div.className = "cp";
-    div.innerText = `${i + 1}. КП ${item.cp} (${item.time})`;
+
+    if (item.type === "repeat") {
+      div.style.color = "red";
+      div.innerText = `${i+1}. ❌ КП ${item.cp} (${item.time})`;
+    }
+    else if (item.type === "finish") {
+      div.style.color = "#ff5252";
+      div.innerText = `${i+1}. 🏁 ФИНИШ (${item.time})`;
+    }
+    else {
+      div.style.color = "#00c853";
+      div.innerText = `${i+1}. ✔ КП ${item.cp} (${item.time})`;
+    }
+
     list.appendChild(div);
   });
 }
 
-// ---------------- STORAGE ----------------
+function sendToSheet(data) {
+  return fetch(SHEET_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
+}
+
+function trySync() {
+  if (!navigator.onLine) return;
+
+  queue.forEach(async (item) => {
+    await sendToSheet(item);
+  });
+
+  queue = [];
+  saveQueue();
+}
+
+window.addEventListener("online", trySync);
+
 function saveData() {
   localStorage.setItem("cp_" + athlete, JSON.stringify(checkpoints));
 }
@@ -189,6 +302,15 @@ function saveData() {
 function loadData() {
   const data = localStorage.getItem("cp_" + athlete);
   if (data) checkpoints = JSON.parse(data);
+}
+
+function saveQueue() {
+  localStorage.setItem("queue_" + athlete, JSON.stringify(queue));
+}
+
+function loadQueue() {
+  const data = localStorage.getItem("queue_" + athlete);
+  if (data) queue = JSON.parse(data);
 }
 
 </script>
