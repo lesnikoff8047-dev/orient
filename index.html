@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
 
-  <!-- 🔥 БЛОКИРОВКА МАСШТАБА -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <title>Ориентирование QR</title>
@@ -13,7 +12,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      overflow-x: hidden; /* 🚫 запрет движения влево-вправо */
+      overflow-x: hidden;
       background: #121212;
       color: white;
       font-family: Arial;
@@ -37,25 +36,46 @@
       margin-top: 10px;
     }
 
-    /* 🔥 БОЛЬШАЯ ЗЕЛЁНАЯ КНОПКА */
+    /* 🔥 ОБЩИЙ СТИЛЬ КНОПОК */
+    button {
+      border: none;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: 0.1s;
+    }
+
+    /* 🟢 БОЛЬШАЯ КНОПКА СКАНА */
     .scan-btn {
       background: #00c853;
       color: white;
       font-size: 22px;
-      padding: 50px 60px;
-      border: none;
-      border-radius: 16px;
-      cursor: pointer;
+      padding: 20px 30px;
       margin: 20px 0;
       width: 100%;
       font-weight: bold;
       box-shadow: 0 6px 0 #009624;
-      transition: 0.1s;
     }
 
     .scan-btn:active {
       transform: translateY(4px);
       box-shadow: 0 2px 0 #009624;
+    }
+
+    /* 🔵 КНОПКА НАЧАТЬ (УВЕЛИЧЕНА) */
+    .start-btn {
+      background: #2196f3;
+      color: white;
+      font-size: 20px;
+      padding: 18px 30px;
+      margin-top: 15px;
+      width: 100%;
+      font-weight: bold;
+      box-shadow: 0 6px 0 #1565c0;
+    }
+
+    .start-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1565c0;
     }
 
     .cp {
@@ -78,13 +98,15 @@
 
 <div id="app">
 
-  <h2>🏁 Ориентирование QR</h2>
+  <h2>🏁 Ориентирование</h2>
 
   <div id="login">
     <p>Введите номер спортсмена:</p>
     <input id="athleteId" type="text" placeholder="Например 101">
     <br>
-    <button onclick="start()">Начать</button>
+
+    <!-- 🔥 УВЕЛИЧЕННАЯ КНОПКА -->
+    <button class="start-btn" onclick="start()">Начать</button>
   </div>
 
   <div id="main" style="display:none;">
