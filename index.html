@@ -148,10 +148,10 @@ function registerCP(cp) {
   const isRepeat = checkpoints.some(item => item.cp === cp);
 
   const record = {
-    athlete,
-    cp,
-    time,
-    type: isRepeat ? "repeat" : "ok"
+    athlete: athlete,
+    cp: cp,
+    time: time,
+    type: isRepeat ? "repeat" : "ok"   // 👈 ВАЖНО: теперь всегда есть type
   };
 
   checkpoints.push(record);
@@ -173,10 +173,10 @@ function render() {
 
     if (item.type === "repeat") {
       div.style.color = "red";
-      div.innerText = `${i+1}. ❌ ${item.cp} (${item.time})`;
+      div.innerText = `${i+1}. ❌ КП ${item.cp} (${item.time})`;
     } else {
       div.style.color = "#00c853";
-      div.innerText = `${i+1}. ✔ ${item.cp} (${item.time})`;
+      div.innerText = `${i+1}. ✔ КП ${item.cp} (${item.time})`;
     }
 
     list.appendChild(div);
