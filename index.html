@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ориентирование FREE</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0b1220;
+  color:white;
+  text-align:center;
+  font-size:18px;
+}
+
+.top{
+  background:#111827;
+  padding:20px;
+}
+
+h2{
+  margin:5px;
+  color:#38bdf8;
+  font-size:34px;
+}
+
+.progress{
+  font-size:34px;
+  margin-top:8px;
+}
+
+button{
+  padding:40px;
+  width:99%;
+  margin-top:20px;
+  border:none;
+  border-radius:20px;
+  background:#22c55e;
+  color:white;
+  font-size:46px;
+  font-weight:bold;
+}
+
+video{
+  width:99%;
+  margin-top:12px;
+  border-radius:12px;
+  display:none;
+}
+
+.card{
+  background:#111827;
+  margin:12px auto;
+  padding:18px;
+  width:99%;
+  border-radius:18px;
+  text-align:left;
+  font-size:32px;
+}
+
+.green{color:#22c55e;}
+.red{color:#ef4444;}
+</style>
+</head>
+
+<body>
+
+<div class="top">
+  <h2>🏁 ОРИЕНТИРОВАНИЕ</h2>
+  <div class="progress" id="progress">0 КП</div>
+  <div id="athleteInfo"></div>
+  <div id="netStatus"></div>
+</div>
+
+<button onclick="startScan()">📷 СКАН КП</button>
+
+<video id="video" autoplay playsinline></video>
+
+<div id="log"></div>
+
+<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+
+<script>
+
+const URL = "https://script.google.com/macros/s/AKfycbxPb7oesDI3zk7zZFQNENB2wBCHeAr-RnK-6w9Xf2NQ0ZggpliVHEx9G6SABTTyPsYw/exec";
+
+let athleteId = prompt("Номер спортсмена:");
+let visited = new Set(JSON.parse(localStorage.getItem("visited") || "[]"));
+let scanning = false;
+
+function save(){
+  localStorage.setItem("visited", JSON.stringify([...visited]));
+}
+
+function updateUI(){
+  document.getElementById("progress").innerText = visited.size + " КП";
+  document.getElementById("athleteInfo").innerText = "👤 " + athleteId;
+  document.getElementById("netStatus").innerText = navigator.onLine ? "🟢 ONLINE" : "🔴 OFFLINE";
+}
+
+function send(cp, status){
+
+  fetch(URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      athlete: athleteId,
+      cp: cp,
+      status: status,
+      time: new Date().toISOString()
+    })
+  })
+  .then(r => r.text())
+  .then(r => console.log("SERVER:", r))
+  .catch(e => console.log("ERROR:", e));
+
+}
+
+function startScan(){
+
+  if(scanning) return;
+
+  const video = document.getElementById("video");
+  video.style.display = "block";
+  scanning = true;
+
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+  .then(stream=>{
+
+    video.srcObject = stream;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    function scan(){
+
+      if(!scanning) return;
+
+      if(video.readyState === video.HAVE_ENOUGH_DATA){
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        ctx.drawImage(video,0,0);
+
+        const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+        const code = jsQR(img.data, canvas.width, canvas.height);
+
+        if(code){
+
+          let cp = code.data.trim();
+
+          scanning = false;
+
+          if(!visited.has(cp)){
+            visited.add(cp);
+            save();
+            send(cp,"OK");
+            addLog(cp,true);
+          } else {
+            addLog(cp,false,"Уже был");
+          }
+
+          updateUI();
+
+          stream.getTracks().forEach(t=>t.stop());
+          video.style.display = "none";
+
+          return;
+        }
+      }
+
+      requestAnimationFrame(scan);
+    }
+
+    scan();
+
+  });
+
+}
+
+function addLog(cp, ok, msg){
+
+  let div = document.createElement("div");
+  div.className = "card";
+
+  div.innerHTML = `
+    <b class="${ok ? 'green' : 'red'}">${cp}</b><br>
+    ${msg || (ok ? "✔ OK" : "❌")}
+  `;
+
+  document.getElementById("log").prepend(div);
+}
+
+window.onload = updateUI;
+
+</script>
+
+</body>
+</html>
