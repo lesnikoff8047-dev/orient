@@ -162,10 +162,6 @@ function start() {
 
 // ---------- SCAN ----------
 function startScan() {
-  if (raceFinished) {
-    alert("Гонка завершена");
-    return;
-  }
 
   document.getElementById("reader").style.display = "block";
 
@@ -181,13 +177,13 @@ function startScan() {
 
       const code = text.trim();
 
-      // 🏁 ФИНИШ
+      // 🏁 финиш
       if (code === "100") {
         finishRace();
         return;
       }
 
-      // 🧹 ОЧИСТКА QR
+      // 🧹 мгновенная очистка
       if (code.toUpperCase() === "ОЧИСТКА") {
         const ok = confirm("⚠ Очистить все данные?");
         if (!ok) return;
@@ -202,7 +198,6 @@ function startScan() {
 
 // ---------- КП ----------
 function registerCP(cp) {
-  if (raceFinished) return;
 
   const time = new Date().toLocaleTimeString();
 
@@ -225,7 +220,6 @@ function registerCP(cp) {
 
 // ---------- ФИНИШ ----------
 function finishRace() {
-  if (raceFinished) return;
 
   raceFinished = true;
   finishTime = Date.now();
@@ -246,8 +240,9 @@ function finishRace() {
   alert("🏁 ФИНИШ!");
 }
 
-// ---------- ОЧИСТКА QR ----------
+// ---------- МГНОВЕННАЯ ОЧИСТКА ----------
 function forceReset() {
+
   checkpoints = [];
   queue = [];
   raceFinished = false;
@@ -263,7 +258,7 @@ function forceReset() {
   alert("🧹 Очищено");
 }
 
-// ---------- КНОПКА ----------
+// ---------- КНОПКА ОЧИСТКИ ----------
 function resetData() {
 
   if (checkpoints.length > 0 && !raceFinished) {
@@ -289,10 +284,12 @@ function resetData() {
 
 // ---------- RENDER ----------
 function render() {
+
   const list = document.getElementById("list");
   list.innerHTML = "";
 
   checkpoints.forEach((item, i) => {
+
     const div = document.createElement("div");
     div.className = "cp";
 
